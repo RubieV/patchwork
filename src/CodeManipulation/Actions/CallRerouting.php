@@ -24,7 +24,7 @@ const CALL_INTERCEPTION_CODE = '
     unset($__pwClass, $__pwCalledClass, $__pwResult, $__pwClosureName, $__pwFrame);
 ';
 
-const QUEUE_DEPLOYMENT_CODE = '\Patchwork\CallRerouting\deployQueue()';
+const QUEUE_DEPLOYMENT_CODE = '\Patchwork\CallRerouting\deployQueue();';
 
 function markPreprocessedFiles()
 {
@@ -36,10 +36,7 @@ function injectCallInterceptionCode()
     return Generic\prependCodeToFunctions(Utils\condense(CALL_INTERCEPTION_CODE));
 }
 
-function injectQueueDeploymentCode()
+function injectQueueDeploymentCodeAfterClassDefinitions()
 {
-    return Generic\chain(array(
-        Generic\injectFalseExpressionAtBeginnings(QUEUE_DEPLOYMENT_CODE),
-        Generic\injectCodeAfterClassDefinitions(QUEUE_DEPLOYMENT_CODE . ';'),
-    ));
+    return Generic\injectCodeAfterClassDefinitions(QUEUE_DEPLOYMENT_CODE);
 }

@@ -9,7 +9,7 @@ namespace Patchwork\CodeManipulation;
 
 use Patchwork\Utils;
 
-class Stream
+class StreamWrapper
 {
     const STREAM_OPEN_FOR_INCLUDE = 128;
     const STAT_MTIME_NUMERIC_OFFSET = 9;

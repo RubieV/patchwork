@@ -17,6 +17,7 @@ function locate()
     $alreadyRead = [];
     $paths = array_map('dirname', get_included_files());
     $paths[] = dirname($_SERVER['PHP_SELF']);
+    $paths[] = getcwd();
     foreach ($paths as $path) {
         while (dirname($path) !== $path) {
             $file = $path . '/' . FILE_NAME;
@@ -42,7 +43,7 @@ function read($file)
 function set(array $data, $file)
 {
     $keys = array_keys($data);
-    $list = ['blacklist', 'whitelist', 'cache-path'];
+    $list = ['blacklist', 'whitelist', 'cache-path', 'use-stream-filter'];
     $unknown = array_diff($keys, $list);
     if ($unknown != []) {
         throw new Exceptions\ConfigKeyNotRecognized(reset($unknown), $list, $file);
@@ -51,6 +52,7 @@ function set(array $data, $file)
     setBlacklist(get($data, 'blacklist'), $root);
     setWhitelist(get($data, 'whitelist'), $root);
     setCachePath(get($data, 'cache-path'), $root);
+    setStreamFilterPolicy(get($data, 'use-stream-filter'), $root);
 }
 
 function get(array $data, $key)
@@ -106,6 +108,16 @@ function getCachePath()
     return State::$cachePath;
 }
 
+function setStreamFilterPolicy($policy)
+{
+    State::$useStreamFilter = (bool) $policy ?: State::$useStreamFilter;
+}
+
+function shouldUseStreamFilter()
+{
+    return State::$useStreamFilter;
+}
+
 function resolvePath($path, $root)
 {
     if ($path === null) {
@@ -139,4 +151,5 @@ class State
     static $blacklist = [];
     static $whitelist = [];
     static $cachePath;
+    static $useStreamFilter = false;
 }

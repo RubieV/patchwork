@@ -74,6 +74,11 @@ function hasMissed($callable)
     return Utils\callableWasMissed($callable);
 }
 
+function transform($path)
+{
+    return CodeManipulation\rewriteAndPrepareImportPath($path);
+}
+
 Utils\alias('Patchwork', [
     'redefine'   => ['replace', 'replaceLater'],
     'relay'      => 'callOriginal',
@@ -93,21 +98,34 @@ if (Utils\runningOnHHVM()) {
     return;
 }
 
-CodeManipulation\Stream::wrap();
+CodeManipulation\StreamWrapper::wrap();
+
+if (CodeManipulation\cacheEnabled()) {
+    if (Config\shouldUseStreamFilter()) {
+        CodeManipulation\StreamFilter::register();
+        CodeManipulation\onBeginScript('Patchwork\CodeManipulation\StreamWrapper::wrap');
+        CodeManipulation\register([
+            CodeManipulation\Actions\CodeManipulation\propagateThroughStreamFilter(),
+            CodeManipulation\Actions\CodeManipulation\expandMagicFilesystemConstants(),
+        ]);
+    }
+} else {
+    Utils\clearOpcodeCaches();
+    register_shutdown_function('Patchwork\Utils\clearOpcodeCaches');
+}
 
 CodeManipulation\register([
     CodeManipulation\Actions\CodeManipulation\propagateThroughEval(),
+    CodeManipulation\Actions\CodeManipulation\injectScriptBeginningTriggers(),
     CodeManipulation\Actions\CallRerouting\injectCallInterceptionCode(),
-    CodeManipulation\Actions\CallRerouting\injectQueueDeploymentCode(),
+    CodeManipulation\Actions\CallRerouting\injectQueueDeploymentCodeAfterClassDefinitions(),
 ]);
 
 CodeManipulation\onImport([
     CodeManipulation\Actions\CallRerouting\markPreprocessedFiles(),
 ]);
 
-Utils\clearOpcodeCaches();
-
-register_shutdown_function('Patchwork\Utils\clearOpcodeCaches');
+CodeManipulation\onBeginScript('Patchwork\CallRerouting\deployQueue');
 
 if (Utils\wasRunAsConsoleApp()) {
     require __DIR__ . '/src/Console.php';

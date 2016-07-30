@@ -18,15 +18,7 @@ const ALIASING_CODE = '
 
 function clearOpcodeCaches()
 {
-    if (function_exists('opcache_reset')) {
-        opcache_reset();
-    }
-    if (ini_get('wincache.ocenabled')) {
-        wincache_refresh_if_changed();
-    }
-    if (ini_get('apc.enabled') && function_exists('apc_clear_cache')) {
-        apc_clear_cache();
-    }
+    # TODO
 }
 
 function generatorsSupported()
@@ -44,12 +36,12 @@ function condense($string)
     return preg_replace('/\s*/', '', $string);
 }
 
-function findFirstGreaterThan(array $array, $value)
+function findFirstGreaterThan(array $array, $value, $default = INF)
 {
     $low = 0;
     $high = count($array) - 1;
-    if ($array[$high] <= $value) {
-        return $high + 1;
+    if (empty($array) || $array[$high] <= $value) {
+        return INF;
     }
     while ($low < $high) {
         $mid = (int)(($low + $high) / 2);
@@ -59,7 +51,7 @@ function findFirstGreaterThan(array $array, $value)
             $high = $mid;
         }
     }
-    return $low;
+    return $array[$low];
 }
 
 function interpretCallable($callback)
@@ -109,6 +101,28 @@ function append(&$array, $value)
     $array[] = $value;
     end($array);
     return key($array);
+}
+
+function appendUnder(&$array, $path, $value)
+{
+    foreach ((array) $path as $key) {
+        if (!isset($array[$key])) {
+            $array[$key] = [];
+        }
+        $array = &$array[$key];
+    }
+    return append($array, $value);
+}
+
+function access($array, $path, $default = null)
+{
+    foreach ((array) $path as $key) {
+        if (!isset($array[$key])) {
+            return $default;
+        }
+        $array = $array[$key];
+    }
+    return $array;
 }
 
 function normalizePath($path)
@@ -272,6 +286,16 @@ function wasRunAsConsoleApp()
     return isset($argv) && (
         endsWith($argv[0], 'patchwork.phar') || endsWith($argv[0], 'Patchwork.php')
     );
+}
+
+function toStringExpression($string)
+{
+    return '\'' . str_replace('\\', '\\\\', $string) .  '\'';
+}
+
+function importerSnippet($file)
+{
+    return sprintf('<?php return require %s;', toStringExpression($file));
 }
 
 class State
